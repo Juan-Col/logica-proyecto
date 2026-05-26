@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Dominion — Edición Universitaria</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --p1: #00d4ff;
+  --p2: #ff4466;
+  --gold: #ffd700;
+  --bg: #030712;
+  --panel: rgba(10,20,40,0.92);
+  --border: rgba(0,212,255,0.2);
+  --text: #e2e8f0;
+  --dim: #64748b;
+  --green: #00ff88;
+  --red: #ff4466;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Rajdhani',sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── GRID BG ── */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events:none;
+  z-index:0;
+}
+
+/* ── COVER ── */
+#cover {
+  position:fixed; inset:0; z-index:100;
+  display:flex; align-items:center; justify-content:center;
+  background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.15) 0%, var(--bg) 70%);
+}
+.cover-box {
+  max-width:760px; width:95%;
+  background: var(--panel);
+  border:1px solid var(--border);
+  border-radius:24px;
+  padding:50px 40px;
+  text-align:center;
+  box-shadow: 0 0 80px rgba(0,212,255,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.cover-box h1 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(2rem,5vw,3.8rem);
+  font-weight:900;
+  background: linear-gradient(135deg,#00d4ff,#0088ff,#00d4ff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:8px; letter-spacing:2px;
+}
+.cover-box h2 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(0.9rem,2vw,1.2rem);
+  color:var(--dim); font-weight:400; letter-spacing:4px;
+  margin-bottom:30px;
+}
+.cover-topics {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  margin:24px 0; text-align:left;
+}
+.topic-chip {
+  background:rgba(0,212,255,0.06);
+  border:1px solid rgba(0,212,255,0.15);
+  border-radius:10px; padding:10px 14px;
+  font-size:0.95rem; color:var(--text);
+  display:flex; align-items:center; gap:8px;
+}
+.topic-chip span { color:var(--p1); font-size:1.1rem; }
+.cover-rules {
+  background:rgba(255,255,255,0.03);
+  border-radius:14px; padding:18px 20px;
+  margin:20px 0; text-align:left;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.cover-rules p { color:var(--dim); font-size:0.95rem; line-height:1.8; }
+.cover-rules strong { color:var(--gold); }
+.btn-start {
+  display:inline-block; margin-top:20px;
+  background: linear-gradient(135deg,#0088ff,#00d4ff);
+  color:#000; font-family:'Orbitron',monospace;
+  font-size:1rem; font-weight:700; letter-spacing:2px;
+  padding:16px 48px; border:none; border-radius:50px;
+  cursor:pointer; transition:all 0.3s;
+  box-shadow:0 0 30px rgba(0,212,255,0.3);
+  width:100%;
+}
+.btn-start:hover { transform:scale(1.04); box-shadow:0 0 50px rgba(0,212,255,0.5); }
+
+/* ── GAME ── */
+#game { display:none; position:relative; z-index:1; padding:16px; }
+
+.game-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; gap:10px; flex-wrap:wrap;
+}
+.game-header h1 {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(1.2rem,3vw,1.8rem);
+  background:linear-gradient(135deg,#00d4ff,#0088ff);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  font-weight:900;
+}
+.turn-badge {
+  font-family:'Orbitron',monospace;
+  font-size:0.85rem; font-weight:700; letter-spacing:1px;
+  padding:8px 20px; border-radius:50px;
+  transition:all 0.4s;
+}
+.turn-p1 { background:rgba(0,212,255,0.15); border:2px solid var(--p1); color:var(--p1); }
+.turn-p2 { background:rgba(255,68,102,0.15); border:2px solid var(--p2); color:var(--p2); }
+
+.game-layout {
+  display:grid;
+  grid-template-columns:1fr 320px;
+  gap:16px;
+}
+
+/* ── SCORECARDS ── */
+.scorecards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.scorecard {
+  background:var(--panel);
+  border-radius:14px; padding:14px 16px;
+  border:1px solid var(--border);
+}
+.scorecard.active-p1 { border-color:var(--p1); box-shadow:0 0 20px rgba(0,212,255,0.15); }
+.scorecard.active-p2 { border-color:var(--p2); box-shadow:0 0 20px rgba(255,68,102,0.15); }
+.sc-name {
+  font-family:'Orbitron',monospace;
+  font-size:0.75rem; font-weight:700; letter-spacing:2px;
+  margin-bottom:8px;
+}
+.sc-name.c1 { color:var(--p1); }
+.sc-name.c2 { color:var(--p2); }
+.sc-stat { font-size:0.9rem; color:var(--dim); margin:3px 0; }
+.sc-stat strong { color:var(--text); }
+.lives { display:flex; gap:4px; margin-top:6px; }
+.heart { font-size:1rem; transition:all 0.3s; }
+.heart.lost { filter:grayscale(1); opacity:0.25; }
+
+/* ── PROGRESS ── */
+.progress-bar-wrap {
+  background:rgba(255,255,255,0.05);
+  border-radius:20px; height:14px;
+  margin-bottom:14px; overflow:hidden;
+  border:1px solid rgba(255,255,255,0.07);
+}
+.progress-fill {
+  height:100%;
+  background:linear-gradient(90deg,var(--p1),#0088ff);
+  transition:width 0.6s ease;
+  position:relative;
+}
+
+/* ── BOARD ── */
+.board {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+}
+.cell {
+  aspect-ratio:1;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:12px;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  cursor:pointer; transition:all 0.25s;
+  font-size:0.7rem; color:var(--dim);
+  text-align:center; padding:4px;
+  position:relative; overflow:hidden;
+  font-family:'Orbitron',monospace;
+}
+.cell:hover:not(.taken) {
+  border-color:var(--p1);
+  background:rgba(0,212,255,0.07);
+  transform:scale(1.06);
+  box-shadow:0 0 18px rgba(0,212,255,0.2);
+}
+.cell.taken { cursor:not-allowed; }
+.cell.own1 { background:rgba(0,212,255,0.18); border-color:var(--p1); color:var(--p1); }
+.cell.own2 { background:rgba(255,68,102,0.18); border-color:var(--p2); color:var(--p2); }
+.cell.bonus-marker::after {
+  content:'★';
+  position:absolute; top:2px; right:4px;
+  color:var(--gold); font-size:0.65rem;
+}
+.cell.trap-marker::after {
+  content:'☠';
+  position:absolute; top:2px; right:4px;
+  color:#ff6600; font-size:0.65rem;
+}
+.cell-num { font-size:0.6rem; color:var(--dim); margin-bottom:2px; }
+.cell-power { font-size:1rem; font-weight:700; }
+
+/* ── RIGHT PANEL ── */
+.right-panel {
+  display:flex; flex-direction:column; gap:12px;
+}
+.panel-box {
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:18px;
+}
+.panel-box h3 {
+  font-family:'Orbitron',monospace;
+  font-size:0.75rem; letter-spacing:2px;
+  color:var(--p1); margin-bottom:12px;
+}
+
+/* ── OPERATION SELECTOR ── */
+.op-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.op-btn {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:10px; padding:10px;
+  color:var(--text); font-family:'Rajdhani',sans-serif;
+  font-size:0.9rem; font-weight:600; cursor:pointer;
+  transition:all 0.2s; text-align:center;
+}
+.op-btn:hover { background:rgba(0,212,255,0.1); border-color:var(--p1); }
+.op-btn.selected { background:rgba(0,212,255,0.2); border-color:var(--p1); color:var(--p1); }
+.op-btn .op-symbol { font-size:1.4rem; display:block; margin-bottom:2px; }
+.op-btn .op-power {
+  font-size:0.7rem; color:var(--gold);
+  font-family:'Orbitron',monospace;
+}
+
+/* ── CHALLENGE ── */
+.challenge-box {
+  background:rgba(0,212,255,0.05);
+  border:1px solid rgba(0,212,255,0.2);
+  border-radius:12px; padding:16px;
+  min-height:90px;
+}
+.challenge-question {
+  font-size:1.3rem; font-weight:600;
+  color:white; text-align:center; margin-bottom:8px;
+  line-height:1.4;
+}
+.challenge-hint {
+  font-size:0.8rem; color:var(--dim);
+  text-align:center;
+}
+
+/* ── TIMER ── */
+.timer-ring {
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; padding:10px;
+  background:rgba(250,204,21,0.05);
+  border-radius:10px; border:1px solid rgba(250,204,21,0.15);
+}
+.timer-num {
+  font-family:'Orbitron',monospace;
+  font-size:1.8rem; font-weight:900; color:var(--gold);
+  min-width:50px; text-align:center;
+}
+.timer-bar-wrap { flex:1; background:rgba(255,255,255,0.07); border-radius:10px; height:8px; }
+.timer-bar { height:100%; background:var(--gold); border-radius:10px; transition:width 1s linear; }
+
+/* ── INPUT + SUBMIT ── */
+.answer-input {
+  width:100%; padding:12px 16px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px; color:white;
+  font-family:'Rajdhani',sans-serif; font-size:1.1rem;
+  outline:none; transition:border 0.2s;
+}
+.answer-input:focus { border-color:var(--p1); background:rgba(0,212,255,0.06); }
+.btn-resolve {
+  width:100%; padding:13px;
+  background:linear-gradient(135deg,#0088ff,#00d4ff);
+  border:none; border-radius:10px; color:#000;
+  font-family:'Orbitron',monospace; font-size:0.85rem;
+  font-weight:700; letter-spacing:1px; cursor:pointer;
+  transition:all 0.25s; margin-top:8px;
+}
+.btn-resolve:hover { transform:scale(1.03); box-shadow:0 0 20px rgba(0,212,255,0.3); }
+.btn-newgame {
+  width:100%; padding:10px;
+  background:transparent; border:1px solid var(--dim);
+  border-radius:10px; color:var(--dim);
+  font-family:'Rajdhani',sans-serif; font-size:0.9rem;
+  cursor:pointer; transition:all 0.2s; margin-top:6px;
+}
+.btn-newgame:hover { border-color:var(--text); color:var(--text); }
+
+/* ── FEEDBACK ── */
+.feedback-box {
+  border-radius:12px; padding:14px 16px;
+  font-size:0.95rem; line-height:1.6;
+  display:none;
+}
+.feedback-box.show { display:block; }
+.feedback-correct { background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.3); color:var(--green); }
+.feedback-wrong { background:rgba(255,68,102,0.08); border:1px solid rgba(255,68,102,0.3); color:#ff8899; }
+.feedback-box .fb-title { font-family:'Orbitron',monospace; font-size:0.75rem; letter-spacing:1px; margin-bottom:6px; }
+.feedback-box .fb-step { color:var(--text); font-size:0.88rem; margin-top:4px; }
+
+/* ── LEGEND ── */
+.legend { display:flex; gap:10px; flex-wrap:wrap; font-size:0.8rem; color:var(--dim); }
+.leg-item { display:flex; align-items:center; gap:5px; }
+
+/* ── OVERLAY GANADOR ── */
+.overlay {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.92);
+  display:flex; align-items:center; justify-content:center;
+}
+.overlay-box {
+  background:var(--bg);
+  border:2px solid var(--gold);
+  border-radius:28px; padding:50px 40px;
+  text-align:center; max-width:480px; width:90%;
+  box-shadow:0 0 80px rgba(255,215,0,0.15);
+}
+.overlay-box h1 {
+  font-family:'Orbitron',monospace;
+  font-size:3rem; font-weight:900; color:var(--gold);
+  margin-bottom:10px;
+}
+.overlay-box h2 { font-family:'Orbitron',monospace; font-size:1.8rem; color:white; margin-bottom:6px; }
+.overlay-box p { color:var(--dim); margin-bottom:24px; font-size:1rem; }
+.overlay-box .score-line { font-size:1.1rem; color:var(--text); margin:6px 0; }
+.overlay-btn {
+  display:block; width:100%; padding:14px;
+  border:none; border-radius:12px; font-family:'Orbitron',monospace;
+  font-size:0.85rem; font-weight:700; letter-spacing:1px;
+  cursor:pointer; margin-bottom:10px; transition:all 0.25s;
+}
+.overlay-btn.play-again { background:linear-gradient(135deg,#0088ff,#00d4ff); color:#000; }
+.overlay-btn.close-btn { background:transparent; border:1px solid var(--dim); color:var(--dim); }
+.overlay-btn:hover { transform:scale(1.03); }
+
+/* ── BANNER RESULTADO ── */
+#resultBanner {
+  position:fixed;
+  inset:0;
+  z-index:300;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.25s;
+}
+#resultBanner.show { opacity:1; pointer-events:none; }
+.banner-word {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(4rem,15vw,9rem);
+  font-weight:900;
+  letter-spacing:6px;
+  line-height:1;
+  text-shadow:0 0 60px currentColor, 0 0 120px currentColor;
+  animation:bannerPop 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.banner-word.correct-word { color:#00ff88; }
+.banner-word.wrong-word   { color:#ff4466; }
+.banner-sub {
+  font-family:'Rajdhani',sans-serif;
+  font-size:clamp(1rem,3vw,1.6rem);
+  font-weight:600;
+  letter-spacing:3px;
+  margin-top:12px;
+  opacity:0.85;
+}
+.banner-sub.correct-word { color:#00ff88; }
+.banner-sub.wrong-word   { color:#ff6680; }
+.banner-bg-correct { background:radial-gradient(ellipse at center, rgba(0,255,136,0.18) 0%, transparent 70%); }
+.banner-bg-wrong   { background:radial-gradient(ellipse at center, rgba(255,68,102,0.18) 0%, transparent 70%); }
+@keyframes bannerPop {
+  from { transform:scale(0.4) rotate(-4deg); opacity:0; }
+  to   { transform:scale(1)   rotate(0deg);  opacity:1; }
+}
+
+@media(max-width:800px){
+  .game-layout { grid-template-columns:1fr; }
+  .board { grid-template-columns:repeat(5,1fr); }
+}
+@media(max-width:480px){
+  .board { grid-template-columns:repeat(5,1fr); gap:5px; }
+  .cell { border-radius:8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ PORTADA ══════════ -->
+<div id="cover">
+  <div class="cover-box">
+    <h1>MATRIX DOMINION</h1>
+    <h2>MATEMÁTICAS APLICADAS · EDICIÓN UNIVERSITARIA</h2>
+
+    <div class="cover-topics">
+      <div class="topic-chip"><span>➕</span> Fracciones</div>
+      <div class="topic-chip"><span>∩</span> Conjuntos</div>
+      <div class="topic-chip"><span>⊻</span> Lógica Proposicional</div>
+      <div class="topic-chip"><span>∝</span> Regla de Tres</div>
+    </div>
+
+    <div class="cover-rules">
+      <p>
+        <strong>Mecánica estratégica:</strong> Cada territorio tiene un <strong>Poder</strong> (número fraccionario).
+        Antes de atacar, eliges una <strong>Operación</strong> (+, −, ×, ÷) que determina cuánto poder ganas o arriesgas.
+        Si respondes bien, conquistas el territorio con ese poder; si fallas, <strong>pierdes vidas Y el poder apostado</strong>.
+        Gana quien acumule más poder total o deje sin vidas al rival.<br><br>
+        <strong>★ Bonus:</strong> +20% de poder extra &nbsp;|&nbsp;
+        <strong>☠ Trampa:</strong> resta poder si te equivocas &nbsp;|&nbsp;
+        <strong>⏱ Tiempo:</strong> 60 s por turno
+      </p>
+    </div>
+
+    <button class="btn-start" onclick="startGame()">⟶ INICIAR PARTIDA</button>
+  </div>
+</div>
+
+<!-- ══════════ JUEGO ══════════ -->
+<div id="game">
+  <div class="game-header">
+    <h1>MATRIX DOMINION</h1>
+    <div class="turn-badge turn-p1" id="turnBadge">TURNO: JUGADOR 1</div>
+  </div>
+
+  <div class="game-layout">
+
+    <!-- ─── PANEL IZQUIERDO ─── -->
+    <div>
+      <!-- Scorecards -->
+      <div class="scorecards">
+        <div class="scorecard active-p1" id="sc1">
+          <div class="sc-name c1">JUGADOR 1</div>
+          <div class="sc-stat">Territorios: <strong id="ter1">0</strong></div>
+          <div class="sc-stat">Poder total: <strong id="pow1">0.00</strong></div>
+          <div class="sc-stat">Monedas: <strong id="coin1">0</strong></div>
+          <div class="lives" id="hearts1">
+            <span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span>
+          </div>
+        </div>
+        <div class="scorecard" id="sc2">
+          <div class="sc-name c2">JUGADOR 2</div>
+          <div class="sc-stat">Territorios: <strong id="ter2">0</strong></div>
+          <div class="sc-stat">Poder total: <strong id="pow2">0.00</strong></div>
+          <div class="sc-stat">Monedas: <strong id="coin2">0</strong></div>
+          <div class="lives" id="hearts2">
+            <span class="heart">❤️</span><span class="heart">❤️</span><span class="heart">❤️</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progreso -->
+      <div class="progress-bar-wrap">
+        <div class="progress-fill" id="progFill" style="width:0%"></div>
+      </div>
+
+      <!-- Tablero -->
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- ─── PANEL DERECHO ─── -->
+    <div class="right-panel">
+
+      <!-- 1. Selector de operación -->
+      <div class="panel-box">
+        <h3>① ELIGE TU OPERACIÓN</h3>
+        <div class="op-grid" id="opGrid">
+          <button class="op-btn selected" data-op="+" onclick="selectOp(this)">
+            <span class="op-symbol">➕</span> Suma
+            <div class="op-power">Poder +1.0×</div>
+          </button>
+          <button class="op-btn" data-op="-" onclick="selectOp(this)">
+            <span class="op-symbol">➖</span> Resta
+            <div class="op-power">Poder +0.8×, riesgo ×2</div>
+          </button>
+          <button class="op-btn" data-op="×" onclick="selectOp(this)">
+            <span class="op-symbol">✖️</span> Multiplicación
+            <div class="op-power">Poder +1.5×</div>
+          </button>
+          <button class="op-btn" data-op="÷" onclick="selectOp(this)">
+            <span class="op-symbol">➗</span> División
+            <div class="op-power">Poder +2.0×, riesgo ×3</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Territorio seleccionado y pregunta -->
+      <div class="panel-box">
+        <h3>② DESAFÍO MATEMÁTICO</h3>
+        <div class="challenge-box" id="challengeBox">
+          <div class="challenge-question" id="challengeQ">Selecciona un territorio en el tablero</div>
+          <div class="challenge-hint" id="challengeHint"></div>
+        </div>
+      </div>
+
+      <!-- 3. Timer -->
+      <div class="panel-box" style="padding:12px 18px;">
+        <div class="timer-ring">
+          <span style="font-size:1.2rem;">⏱</span>
+          <div class="timer-bar-wrap"><div class="timer-bar" id="timerBar" style="width:100%"></div></div>
+          <div class="timer-num" id="timerNum">60</div>
+        </div>
+      </div>
+
+      <!-- 4. Respuesta -->
+      <div class="panel-box">
+        <h3>③ TU RESPUESTA</h3>
+        <input class="answer-input" type="text" id="answerInput" placeholder="Escribe la respuesta exacta…" autocomplete="off">
+        <button class="btn-resolve" onclick="submitAnswer()">RESOLVER DESAFÍO</button>
+        <button class="btn-newgame" onclick="newGame()">↺ Nueva partida</button>
+      </div>
+
+      <!-- 5. Retroalimentación correctiva -->
+      <div class="feedback-box" id="feedbackBox"></div>
+
+      <!-- Leyenda -->
+      <div class="legend">
+        <div class="leg-item">★ <span>Bonus +20%</span></div>
+        <div class="leg-item">☠ <span>Trampa (penaliza fallo)</span></div>
+        <div class="leg-item" style="color:var(--p1)">■ J1</div>
+        <div class="leg-item" style="color:var(--p2)">■ J2</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── BANNER RESULTADO ── -->
+<div id="resultBanner">
+  <div class="banner-word" id="bannerWord"></div>
+  <div class="banner-sub"  id="bannerSub"></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  BANCO DE PROBLEMAS con explicación paso a paso
+// ══════════════════════════════════════════
+const problems = [
+  // Fracciones
+  { q:'½ + ¼ = ?', a:'3/4', topic:'Fracciones', hint:'Unifica denominadores',
+    steps:['MCM(2,4) = 4','½ = 2/4','2/4 + 1/4 = 3/4'] },
+  { q:'¾ − ¼ = ?', a:'1/2', topic:'Fracciones', hint:'Mismo denominador',
+    steps:['Mismo denominador: 4','3/4 − 1/4 = 2/4','2/4 = 1/2'] },
+  { q:'⅔ × ¾ = ?', a:'1/2', topic:'Fracciones', hint:'Multiplica directo',
+    steps:['2×3 = 6 (numerador)','3×4 = 12 (denominador)','6/12 = 1/2'] },
+  { q:'⅘ ÷ ⅔ = ?', a:'6/5', topic:'Fracciones', hint:'Multiplica por el inverso',
+    steps:['Inverso de 2/3 es 3/2','4/5 × 3/2 = 12/10','12/10 = 6/5'] },
+  { q:'⅚ − ½ = ?', a:'1/3', topic:'Fracciones', hint:'MCM(6,2)=6',
+    steps:['½ = 3/6','5/6 − 3/6 = 2/6','2/6 = 1/3'] },
+  { q:'½ + ⅜ = ?', a:'7/8', topic:'Fracciones', hint:'MCM(2,8)=8',
+    steps:['½ = 4/8','4/8 + 3/8 = 7/8'] },
+  { q:'7/9 − 2/9 = ?', a:'5/9', topic:'Fracciones', hint:'Mismo denominador',
+    steps:['7 − 2 = 5','Denominador sigue siendo 9','Resultado: 5/9'] },
+  { q:'¾ ÷ ½ = ?', a:'3/2', topic:'Fracciones', hint:'Multiplica por inverso de ½',
+    steps:['Inverso de 1/2 es 2/1','3/4 × 2/1 = 6/4','6/4 = 3/2'] },
+  { q:'2/7 × 7/2 = ?', a:'1', topic:'Fracciones', hint:'Números recíprocos',
+    steps:['2×7 = 14 (numerador)','7×2 = 14 (denominador)','14/14 = 1'] },
+  { q:'9/10 − 2/10 = ?', a:'7/10', topic:'Fracciones', hint:'Mismo denominador',
+    steps:['9 − 2 = 7','Denominador: 10','Resultado: 7/10'] },
+
+  // Regla de tres directa
+  { q:'5 cuadernos cuestan $10 000. ¿Cuánto cuestan 7?', a:'14000', topic:'Regla de tres directa',
+    hint:'Más cuadernos → más dinero',
+    steps:['5 → 10000','7 → x','x = 7 × 10000 / 5 = 14000'] },
+  { q:'2 máquinas hacen 40 piezas. ¿Cuántas hacen 4 máquinas?', a:'80', topic:'Regla de tres directa',
+    hint:'Relación directa',
+    steps:['2 → 40','4 → x','x = 4 × 40 / 2 = 80'] },
+  { q:'10 lápices cuestan $5 000. ¿Cuánto cuestan 20?', a:'10000', topic:'Regla de tres directa',
+    hint:'Doble de lápices = doble de precio',
+    steps:['10 → 5000','20 → x','x = 20 × 5000 / 10 = 10000'] },
+
+  // Regla de tres inversa
+  { q:'4 obreros terminan la obra en 12 días. ¿Cuántos días tardan 8 obreros?', a:'6', topic:'Regla de tres inversa',
+    hint:'Más obreros → menos días',
+    steps:['Relación inversa: obreros × días = constante','4 × 12 = 48','8 × x = 48 → x = 6'] },
+  { q:'6 trabajadores tardan 10 días. ¿Cuánto tardan 3?', a:'20', topic:'Regla de tres inversa',
+    hint:'La mitad de trabajadores = el doble de días',
+    steps:['6 × 10 = 60','3 × x = 60','x = 20'] },
+  { q:'3 carros hacen un trabajo en 6 días. ¿Cuántos días necesitan 6 carros?', a:'3', topic:'Regla de tres inversa',
+    hint:'Doble de carros → mitad del tiempo',
+    steps:['3 × 6 = 18','6 × x = 18','x = 3'] },
+
+  // Conjuntos
+  { q:'A={1,2,3} B={3,4,5}  Hallar A∩B', a:'{3}', topic:'Conjuntos',
+    hint:'Intersección = elementos comunes',
+    steps:['Elementos en A: 1,2,3','Elementos en B: 3,4,5','Común: solo el 3 → {3}'] },
+  { q:'A={1,2} B={3,4}  Hallar A∪B', a:'{1,2,3,4}', topic:'Conjuntos',
+    hint:'Unión = todos los elementos',
+    steps:['A aporta: 1,2','B aporta: 3,4','Unión: {1,2,3,4}'] },
+  { q:'A={a,b,c,d} B={c,d,e}  Hallar A∩B', a:'{c,d}', topic:'Conjuntos',
+    hint:'Solo los que aparecen en ambos',
+    steps:['A tiene: a,b,c,d','B tiene: c,d,e','Comunes: c y d → {c,d}'] },
+  { q:'A={1,2,3} B={4,5,6}  ¿A∩B=?', a:'{}', topic:'Conjuntos',
+    hint:'Sin elementos comunes = conjunto vacío',
+    steps:['Ningún elemento de A está en B','La intersección es vacía','Resultado: {} (conjunto vacío)'] },
+
+  // Lógica proposicional
+  { q:'P=verdadero, Q=falso  ¿P ∧ Q?', a:'false', topic:'Lógica proposicional',
+    hint:'AND: solo true si ambas son true',
+    steps:['P=true, Q=false','true AND false = false','Resultado: false'] },
+  { q:'P=verdadero, Q=falso  ¿P ∨ Q?', a:'true', topic:'Lógica proposicional',
+    hint:'OR: true si al menos una es true',
+    steps:['P=true, Q=false','true OR false = true','Resultado: true'] },
+  { q:'¿Negación de verdadero?', a:'false', topic:'Lógica proposicional',
+    hint:'NOT invierte el valor',
+    steps:['NOT(true) = false'] },
+  { q:'¿Negación de falso?', a:'true', topic:'Lógica proposicional',
+    hint:'NOT invierte el valor',
+    steps:['NOT(false) = true'] },
+  { q:'P=falso, Q=falso  ¿P ∨ Q?', a:'false', topic:'Lógica proposicional',
+    hint:'OR: ambas false → resultado false',
+    steps:['false OR false = false'] },
+];
+
+// Multiplicadores de poder por operación
+const opMultiplier = { '+':1.0, '-':0.8, '×':1.5, '÷':2.0 };
+const opRisk       = { '+':1,   '-':2,   '×':1,   '÷':3 };
+
+// ══════════ ESTADO ══════════
+let currentPlayer = 1;
+let selectedCell  = null;
+let ownership     = Array(25).fill(0);
+let power         = Array(25).fill(0);  // poder de cada celda
+let playerPower   = [0,0];
+let playerCoins   = [0,0];
+let playerLives   = [3,3];
+let currentProblem= null;
+let usedProblems  = [];
+let bonusCells    = [], trapCells = [];
+let timerVal      = 60;
+let timerInterval = null;
+let selectedOp    = '+';
+let awaitingAnswer = false;
+
+// ══════════ SETUP ══════════
+function generateSpecialCells(){
+  bonusCells=[]; trapCells=[];
+  while(bonusCells.length<4){
+    let r=Math.floor(Math.random()*25);
+    if(!bonusCells.includes(r)) bonusCells.push(r);
+  }
+  while(trapCells.length<4){
+    let r=Math.floor(Math.random()*25);
+    if(!bonusCells.includes(r)&&!trapCells.includes(r)) trapCells.push(r);
+  }
+}
+
+function generateCellPowers(){
+  // Cada celda tiene un "poder base" fraccionario de 0.5 a 3.0
+  power = Array.from({length:25},()=> Math.round((0.5+Math.random()*2.5)*2)/2);
+}
+
+function createBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML='';
+  for(let i=0;i<25;i++){
+    const c=document.createElement('div');
+    c.className='cell'+(bonusCells.includes(i)?' bonus-marker':'')+(trapCells.includes(i)?' trap-marker':'');
+    c.id='cell-'+i;
+    c.innerHTML=`<div class="cell-num">${i+1}</div><div class="cell-power">${power[i].toFixed(1)}</div>`;
+    c.onclick=()=>selectCell(i);
+    board.appendChild(c);
+  }
+}
+
+function selectOp(btn){
+  document.querySelectorAll('.op-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedOp = btn.dataset.op;
+}
+
+// ══════════ CELDA ══════════
+function selectCell(idx){
+  if(ownership[idx]!==0){ flashMsg('Territorio ya ocupado'); return; }
+  if(!awaitingAnswer===false) return;
+  selectedCell = idx;
+  awaitingAnswer = true;
+  currentProblem = getUniqueProblem();
+  const mult = opMultiplier[selectedOp];
+  const gainPow = (power[idx]*mult).toFixed(2);
+
+  document.getElementById('challengeQ').textContent = currentProblem.q;
+  document.getElementById('challengeHint').textContent =
+    `📌 ${currentProblem.topic} · Operación ${selectedOp} · Ganarás ${gainPow} de poder`;
+
+  hideFeedback();
+  startTimer();
+  document.getElementById('answerInput').value='';
+  document.getElementById('answerInput').focus();
+}
+
+// ══════════ TIMER ══════════
+function startTimer(){
+  clearInterval(timerInterval);
+  timerVal=60;
+  updateTimerUI();
+  timerInterval=setInterval(()=>{
+    timerVal--;
+    updateTimerUI();
+    if(timerVal<=0){
+      clearInterval(timerInterval);
+      handleTimeout();
+    }
+  },1000);
+}
+function updateTimerUI(){
+  document.getElementById('timerNum').textContent=timerVal;
+  document.getElementById('timerBar').style.width=(timerVal/60*100)+'%';
+  document.getElementById('timerBar').style.background=
+    timerVal>20?'var(--gold)':timerVal>10?'#ff9900':'var(--red)';
+}
+function handleTimeout(){
+  loseLife(currentPlayer);
+  showResultBanner(false, '⏱ Tiempo agotado');
+  showFeedback(false, currentProblem, 'tiempo agotado');
+  awaitingAnswer=false; selectedCell=null;
+  updateUI(); checkWinner(); changeTurn();
+}
+
+// ══════════ RESPUESTA ══════════
+function submitAnswer(){
+  if(!awaitingAnswer||selectedCell===null){
+    flashMsg('Primero selecciona un territorio'); return;
+  }
+  clearInterval(timerInterval);
+  const raw = document.getElementById('answerInput').value.trim().toLowerCase();
+
+  if(raw===currentProblem.a.toLowerCase()){
+    // ── CORRECTO ──
+    const mult   = opMultiplier[selectedOp];
+    let gainPow  = power[selectedCell]*mult;
+    let gainCoin = Math.round(gainPow*10);
+
+    ownership[selectedCell] = currentPlayer;
+    const cell = document.getElementById('cell-'+selectedCell);
+    cell.classList.add('taken','own'+(currentPlayer));
+    cell.innerHTML=`<div class="cell-num">${selectedCell+1}</div><div class="cell-power">${gainPow.toFixed(2)}</div>`;
+    cell.onclick=null;
+
+    if(bonusCells.includes(selectedCell)){
+      gainPow  *= 1.2; gainCoin = Math.round(gainPow*10);
+    }
+    // Trampa solo perjudica si aciertas pero te quita un 15% de las monedas ganadas
+    if(trapCells.includes(selectedCell)){
+      gainCoin = Math.round(gainCoin*0.85);
+      showPopup('☠ Trampa activada: −15% de monedas ganadas');
+    }
+
+    playerPower[currentPlayer-1] += gainPow;
+    playerCoins[currentPlayer-1] += gainCoin;
+
+    showResultBanner(true, `+${gainPow} poder · +${gainCoin} monedas`);
+    showFeedback(true, currentProblem, gainPow.toFixed(2), gainCoin);
+
+  } else {
+    // ── INCORRECTO ──
+    const risk = opRisk[selectedOp];
+    loseLife(currentPlayer);
+    // Penalización de poder extra según riesgo de la operación elegida
+    const penaltyPow = power[selectedCell] * 0.3 * risk;
+    playerPower[currentPlayer-1] = Math.max(0, playerPower[currentPlayer-1]-penaltyPow);
+    if(trapCells.includes(selectedCell)){
+      // Trampa doble penalización
+      playerCoins[currentPlayer-1] = Math.max(0, playerCoins[currentPlayer-1]-20);
+    }
+    showResultBanner(false, `Respuesta correcta: ${currentProblem.a}`);
+    showFeedback(false, currentProblem, null, null, penaltyPow.toFixed(2));
+  }
+
+  awaitingAnswer=false; selectedCell=null;
+  updateUI(); checkWinner(); changeTurn();
+  document.getElementById('answerInput').value='';
+}
+
+// ══════════ VIDA / TURNO ══════════
+function loseLife(p){
+  playerLives[p-1]=Math.max(0,playerLives[p-1]-1);
+}
+function changeTurn(){
+  currentPlayer=currentPlayer===1?2:1;
+  const badge=document.getElementById('turnBadge');
+  badge.textContent='TURNO: JUGADOR '+currentPlayer;
+  badge.className='turn-badge '+(currentPlayer===1?'turn-p1':'turn-p2');
+  // Highlight scorecard
+  document.getElementById('sc1').className='scorecard'+(currentPlayer===1?' active-p1':'');
+  document.getElementById('sc2').className='scorecard'+(currentPlayer===2?' active-p2':'');
+
+  document.getElementById('challengeQ').textContent='Selecciona un territorio en el tablero';
+  document.getElementById('challengeHint').textContent='';
+  hideFeedback();
+}
+
+// ══════════ UI ══════════
+function updateUI(){
+  [1,2].forEach(p=>{
+    const i=p-1;
+    document.getElementById('ter'+p).textContent=ownership.filter(x=>x===p).length;
+    document.getElementById('pow'+p).textContent=playerPower[i].toFixed(2);
+    document.getElementById('coin'+p).textContent=playerCoins[i];
+    const hearts=document.getElementById('hearts'+p).querySelectorAll('.heart');
+    hearts.forEach((h,idx)=>h.classList.toggle('lost',idx>=playerLives[i]));
+  });
+  const total=ownership.filter(x=>x!==0).length;
+  document.getElementById('progFill').style.width=(total/25*100)+'%';
+}
+
+// ══════════ BANNER GRANDE CORRECTO / INCORRECTO ══════════
+let bannerTimeout = null;
+function showResultBanner(correct, subText){
+  clearTimeout(bannerTimeout);
+  const banner = document.getElementById('resultBanner');
+  const word   = document.getElementById('bannerWord');
+  const sub    = document.getElementById('bannerSub');
+
+  banner.className = '';
+  banner.offsetHeight; // fuerza reflow para reiniciar animación
+
+  if(correct){
+    banner.className = 'show banner-bg-correct';
+    word.className   = 'banner-word correct-word';
+    word.textContent = '✔ CORRECTO';
+    sub.className    = 'banner-sub correct-word';
+  } else {
+    banner.className = 'show banner-bg-wrong';
+    word.className   = 'banner-word wrong-word';
+    word.textContent = '✖ INCORRECTO';
+    sub.className    = 'banner-sub wrong-word';
+  }
+  sub.textContent = subText || '';
+
+  bannerTimeout = setTimeout(()=>{
+    banner.className='';
+  }, 1800);
+}
+
+// ══════════ FEEDBACK CORRECTIVO ══════════
+function showFeedback(correct, prob, gainPow, gainCoin, penaltyPow){
+  const box=document.getElementById('feedbackBox');
+  box.className='feedback-box show '+(correct?'feedback-correct':'feedback-wrong');
+
+  let html='';
+  if(correct){
+    html=`<div class="fb-title">✔ CORRECTO — ${prob.topic}</div>`;
+    html+=`<div>Ganaste <strong>${gainPow}</strong> de poder y <strong>${gainCoin}</strong> monedas.</div>`;
+    html+=`<div class="fb-step" style="margin-top:8px;color:var(--dim)">Solución paso a paso:</div>`;
+    prob.steps.forEach(s=>{ html+=`<div class="fb-step">▸ ${s}</div>`; });
+  } else {
+    html=`<div class="fb-title">✖ INCORRECTO — ${prob.topic}</div>`;
+    html+=`<div>Respuesta correcta: <strong style="color:white">${prob.a}</strong>`;
+    if(penaltyPow) html+=` · Perdiste ${penaltyPow} de poder`;
+    html+=`</div>`;
+    html+=`<div class="fb-step" style="margin-top:8px;color:var(--dim)">Cómo se resuelve:</div>`;
+    prob.steps.forEach(s=>{ html+=`<div class="fb-step">▸ ${s}</div>`; });
+  }
+  box.innerHTML=html;
+}
+function hideFeedback(){
+  const box=document.getElementById('feedbackBox');
+  box.className='feedback-box';
+  box.innerHTML='';
+}
+
+// ══════════ GANADOR ══════════
+function checkWinner(){
+  if(playerLives[0]<=0) showWinner(2);
+  if(playerLives[1]<=0) showWinner(1);
+  if(ownership.filter(x=>x!==0).length===25){
+    const winner=playerPower[0]>=playerPower[1]?1:2;
+    showWinner(winner, true);
+  }
+}
+function showWinner(p, byPower=false){
+  clearInterval(timerInterval);
+  const old=document.getElementById('winOverlay');
+  if(old) old.remove();
+  const ov=document.createElement('div');
+  ov.id='winOverlay'; ov.className='overlay';
+  const reason=byPower?'dominó el tablero':'eliminó al rival';
+  ov.innerHTML=`
+    <div class="overlay-box">
+      <h1>🏆</h1>
+      <h2>JUGADOR ${p}</h2>
+      <p>ganó porque ${reason}</p>
+      <div class="score-line">Poder J1: ${playerPower[0].toFixed(2)} &nbsp;|&nbsp; Poder J2: ${playerPower[1].toFixed(2)}</div>
+      <div class="score-line">Monedas J1: ${playerCoins[0]} &nbsp;|&nbsp; Monedas J2: ${playerCoins[1]}</div>
+      <button class="overlay-btn play-again" onclick="document.getElementById('winOverlay').remove();newGame();">↺ Nueva partida</button>
+      <button class="overlay-btn close-btn" onclick="document.getElementById('winOverlay').remove();">Cerrar</button>
+    </div>`;
+  document.body.appendChild(ov);
+}
+
+// ══════════ POPUP FLASH ══════════
+function showPopup(msg){
+  const p=document.createElement('div');
+  p.textContent=msg;
+  Object.assign(p.style,{
+    position:'fixed',top:'20px',left:'50%',transform:'translateX(-50%)',
+    background:'#1e293b',border:'1px solid #ffd700',color:'#ffd700',
+    padding:'12px 24px',borderRadius:'10px',zIndex:'999',
+    fontFamily:'Rajdhani,sans-serif',fontSize:'1rem',
+    boxShadow:'0 0 20px rgba(255,215,0,0.2)'
+  });
+  document.body.appendChild(p);
+  setTimeout(()=>p.remove(),2500);
+}
+function flashMsg(msg){
+  document.getElementById('challengeQ').textContent=msg;
+  setTimeout(()=>document.getElementById('challengeQ').textContent='Selecciona un territorio',1500);
+}
+
+// ══════════ PROBLEMA ÚNICO ══════════
+function getUniqueProblem(){
+  if(usedProblems.length>=problems.length) usedProblems=[];
+  let r;
+  do { r=Math.floor(Math.random()*problems.length); } while(usedProblems.includes(r));
+  usedProblems.push(r);
+  return problems[r];
+}
+
+// ══════════ NUEVA PARTIDA ══════════
+function newGame(){
+  ownership=Array(25).fill(0);
+  playerPower=[0,0]; playerCoins=[0,0]; playerLives=[3,3];
+  currentPlayer=1; usedProblems=[];
+  selectedCell=null; awaitingAnswer=false;
+  clearInterval(timerInterval);
+  generateSpecialCells(); generateCellPowers(); createBoard(); updateUI();
+  document.getElementById('turnBadge').textContent='TURNO: JUGADOR 1';
+  document.getElementById('turnBadge').className='turn-badge turn-p1';
+  document.getElementById('sc1').className='scorecard active-p1';
+  document.getElementById('sc2').className='scorecard';
+  document.getElementById('challengeQ').textContent='Selecciona un territorio en el tablero';
+  document.getElementById('challengeHint').textContent='';
+  document.getElementById('timerNum').textContent='60';
+  document.getElementById('timerBar').style.width='100%';
+  hideFeedback();
+}
+
+function startGame(){
+  document.getElementById('cover').style.display='none';
+  document.getElementById('game').style.display='block';
+  newGame();
+}
+
+// Enter para responder
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('answerInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter') submitAnswer();
+  });
+});
+</script>
+</body>
+</html>
